@@ -1,3 +1,5 @@
+# Find named entities in text using Wikineural model
+
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 import datetime
 import logging
@@ -5,16 +7,13 @@ from pymongo import MongoClient
 from collections import Counter
 import torch
 
-# from classification_create_set import COLLECTION_NAME
-
 # Database config
-DB_NAME = "MODAL_testdata"
-COLLECTION_NAME = "LH_UitgeverijVrijdag"
+DB_NAME = "MODAL_data"
+COLLECTION_NAME = "collection_name"
 
 # Setup logging
-LOG_FILE = COLLECTION_NAME + "_error_log.txt"
+LOG_FILE = "logs/" + COLLECTION_NAME + "_error_log.txt"
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
-
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -33,10 +32,7 @@ def get_records_with_text(wordlength):
         client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
         db = client[DB_NAME]
         collection = db[COLLECTION_NAME]
-        # query = {"word_count": {"$gt": wordlength}}
-        # query = (
-        # {"$and": [{"word_count": {"$gt": wordlength}}, {"word_count": {"$lt": 999999}}]})
-        query = ({"$and": [{"$nor": [{"enrichments.model_used": "Wikineural"}]}, {"word_count":{"$gte":50}}, {"word_count": {"$lte": 25000}}]})
+        query = ({"$and": [{"$nor": [{"enrichments.model_used": "Wikineural"}]}, {"word_count":{"$gte":50}}, {"word_count": {"$lte": 9999999}}]}) # change as needed
         records = list(collection.find(query))
         client.close()
         return records
@@ -44,9 +40,8 @@ def get_records_with_text(wordlength):
         logging.error(f"Database error: {e}")
         return []
 
-
 def clean_token(token):
-    # Remove subword prefix (e.g., "##") and handle spacing
+    """Remove subword prefix (e.g., "##") and handle spacing."""
     if token.startswith("##"):
         return token[2:], False  # no leading space
     return token, True  # leading space required
@@ -156,7 +151,6 @@ def ner_extractor(text):
         logging.error(f"NER extraction error: {e}")
         print("ner_extractor error")
         return {"NER_persons": [], "NER_organisations": [], "NER_locations": [], "NER_miscellaneous":[]}
-#END OF FIX
 
 def update_record_in_mongodb(record_id, enrichments):
     """Update the MongoDB record with NER enrichments."""
@@ -209,24 +203,6 @@ else:
 
             # Update MongoDB record
             update_record_in_mongodb(record["_id"], enrichment_data)
-
-            # Print confirmation
-            # print(f"✅ Updated record {record['_id']} with enrichment data.")
-
-            # # Ensure we only update records with extracted entities
-            # if any(entities.values()):  # Check if there's at least one non-empty entity list
-            #     # Prepare enrichment data
-            #     enrichment_data = {
-            #         "model_used": "Wikineural",
-            #         "enrichment_date": datetime.datetime.utcnow().isoformat(),
-            #         **entities  # Merge extracted entities into JSON structure
-            #     }
-            #
-            #     # Update MongoDB record
-            #     update_record_in_mongodb(record["_id"], enrichment_data)
-            #
-            #     # Print confirmation
-            #     # print(f"✅ Updated record {record['_id']} with enrichment data.")
 
         except Exception as e:
             logging.error(f"Error processing record {record['_id']}: {e}")
