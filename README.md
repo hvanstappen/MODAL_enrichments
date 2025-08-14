@@ -10,7 +10,9 @@ This a part of a suite of scripts:
 * scripts for enrichments (this set of scripts)
 * [scripts for browsing and retrieval of documents]()
 
-## NER
+## NER 
+
+### Wikineural
 The script `ner_wikineural.py` handles the Named Entity recognition.
 
 The script processes text documents stored in MongoDB by performing Named Entity Recognition (NER) using the [Wikineural](https://huggingface.co/Babelscape/wikineural-multilingual-ner) multilingual model. Specifically, it:
@@ -24,3 +26,4 @@ The script processes text documents stored in MongoDB by performing Named Entity
 3. Updates each MongoDB document with the extracted entities, along with timestamp and model information
 4. Handles long texts by splitting them into manageable chunks and processes them sequentially
 
+### Gemma3
