@@ -8,8 +8,8 @@ from collections import Counter
 import torch
 
 # Database config
-DB_NAME = "MODAL_data"
-COLLECTION_NAME = "collection_name"
+DB_NAME = "MODAL_data" # Add database name here
+COLLECTION_NAME = "collection_name" # Add collection name here
 
 # Setup logging
 LOG_FILE = "logs/" + COLLECTION_NAME + "_error_log.txt"
@@ -17,7 +17,7 @@ logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, format="%(asctime)s 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load model and tokenizer w/ FIX OF ## ISSUE
+# Load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained("Babelscape/wikineural-multilingual-ner")
 model = AutoModelForTokenClassification.from_pretrained("Babelscape/wikineural-multilingual-ner")
 
