@@ -14,14 +14,14 @@ from pymongo import MongoClient
 
 # SET DB COLLECTION
 database_name = "MODAL_data"  # Replace with your database name
-collection_name = "IN"   # Replace with your collection name
+collection_name = "collection_name"   # Replace with your collection name
 
 # MODEL AND DEVICE
 model_name = "google/gemma-3-4b-it"
 
 # RECOMMENDED: Use GPU if available for a massive performance boost.
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cpu"    # try this option in case of GPU memory issues
 
 # --- INITIALIZATION ---
 # Configure logging once at the start of the script.
