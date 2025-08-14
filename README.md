@@ -6,7 +6,7 @@ The research project "Metadata and Access to Digital Archives Using Large Langua
 
 This a part of a suite of scripts:
 
-* [scripts for text extraction and metadata storage]()
+* [scripts for text extraction and metadata storage](https://github.com/hvanstappen/MODAL_textdatabase/)
 * scripts for enrichments (this set of scripts)
 * [scripts for browsing and retrieval of documents]()
 
