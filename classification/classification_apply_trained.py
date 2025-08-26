@@ -1,111 +1,89 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from datasets import Dataset
+from pymongo import MongoClient
 import torch
-import pandas as pd
-import numpy as np
+import math
+from datetime import datetime
 
-# 1. Laad de nieuwe data
-df = pd.read_csv('./data/email_dataset_extra.csv')
+database_name = "MODAL_testdata" # Replace with database name
+collection_name = "LH_HH_71_Hemmerechts" # Replace with collection name
+finetuned_model_name = "bert-base-dutch-cased_finetuned" # Replace with fine tuned model folder name
 
-text_col = "text_short"  # Pas aan als je CSV een andere kolomnaam gebruikt
+# Get data
+client = MongoClient("mongodb://localhost:27017/")
+db = client[database_name]
+collection = db[collection_name]
 
-if text_col not in df.columns:
-    raise ValueError(f"CSV moet een kolom '{text_col}' bevatten.")
+cursor = collection.find({'$and': [ {'generic_file_type': 'berichtbestand'}, {'word_count': {'$gte': 100} }, {'word_count': {'$lte': 120}} ] })
 
-# 2. Laad het gefinetunede model en tokenizer
-model_dir = "./bert-base-dutch-cased_finetuned"
+texts_all = []
+ids_all = []
+for doc in cursor:
+    if doc.get("extracted_text"):
+        texts_all.append(doc["extracted_text"])
+        ids_all.append(doc["_id"])
+
+if not texts_all:
+    raise ValueError("Geen records gevonden met het veld 'extracted_text'.")
+
+# Load model and tokenizer
+model_dir = "./" + finetuned_model_name
 tokenizer = AutoTokenizer.from_pretrained(model_dir)
 model = AutoModelForSequenceClassification.from_pretrained(model_dir)
-
-# Zorg dat model in eval modus staat
 model.eval()
 
-# 3. Tokenize de nieuwe teksten
-def preprocess(texts):
-    return tokenizer(
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+
+# Define batch function (avoids memory issues)
+def predict_batch(texts):
+    encodings = tokenizer(
         texts,
         padding="max_length",
         truncation=True,
         max_length=512,
         return_tensors="pt"
-    )
+    ).to(device)
 
-encodings = preprocess(df[text_col].tolist())
+    with torch.no_grad():
+        outputs = model(**encodings)
+        logits = outputs.logits
+        predictions = torch.argmax(logits, dim=-1).cpu().numpy()
 
-# 4. Voorspel labels
-with torch.no_grad():
-    outputs = model(**encodings)
-    logits = outputs.logits
-    predictions = torch.argmax(logits, dim=-1).numpy()
+    id2label = model.config.id2label
+    return [id2label[int(i)] for i in predictions]
 
-# 5. Zet integer voorspellingen terug naar labels
-id2label = model.config.id2label
-predicted_labels = [id2label[i] for i in predictions]
+# Start classification
+batch_size = 32
+total_batches = math.ceil(len(texts_all) / batch_size)
 
-# 6. Voeg voorspellingen toe aan dataframe
-df['predicted_label'] = predicted_labels
+for i in range(total_batches):
+    start = i * batch_size
+    end = start + batch_size
+    batch_texts = texts_all[start:end]
+    batch_ids = ids_all[start:end]
 
-# 7. Sla de resultaten op
-df.to_csv('data/test_data_classified.csv', index=False)
-print("Classificatie klaar. Resultaten opgeslagen in 'test_data_classified.csv'.")
+    labels = predict_batch(batch_texts)
 
+    for doc_id, predicted_class in zip(batch_ids, labels):
+        enrichment = {
+            "model_used": finetuned_model_name,
+            "enrichment_date": datetime.utcnow().isoformat(),
+            "class": predicted_class
+        }
 
-# from transformers import AutoModelForSequenceClassification, AutoTokenizer
-# from datasets import Dataset
-# import torch
-# import pandas as pd
-# import numpy as np
-# import torch.nn.functional as F
-#
-# # 1. Laad de nieuwe data
-# df = pd.read_csv('data/test_data.csv')
-#
-# text_col = "text_short"  # Pas aan als nodig
-# if text_col not in df.columns:
-#     raise ValueError(f"CSV moet een kolom '{text_col}' bevatten.")
-#
-# # 2. Laad het gefinetunede model en tokenizer
-# model_dir = "./bert-base-dutch-cased_finetuned"
-# tokenizer = AutoTokenizer.from_pretrained(model_dir)
-# model = AutoModelForSequenceClassification.from_pretrained(model_dir)
-# model.eval()
-#
-# # 3. Tokenize de nieuwe teksten
-# def preprocess(texts):
-#     return tokenizer(
-#         texts,
-#         padding="max_length",
-#         truncation=True,
-#         max_length=512,
-#         return_tensors="pt"
-#     )
-#
-# encodings = preprocess(df[text_col].tolist())
-#
-# # 4. Voorspel labels met softmax scores
-# with torch.no_grad():
-#     outputs = model(**encodings)
-#     logits = outputs.logits
-#     probs = F.softmax(logits, dim=-1).numpy()  # convert logits to probabilities
-#     predictions = np.argmax(probs, axis=-1)
-#
-# # 5. Zet integer voorspellingen terug naar labels
-# id2label = model.config.id2label
-# predicted_labels = [id2label[i] for i in predictions]
-#
-# # 6. Voeg voorspellingen en scores toe aan dataframe
-# df['predicted_label'] = predicted_labels
-#
-# # Voeg kolommen voor de scores per label toe
-# for idx, label in id2label.items():
-#     df[f'score_{label}'] = probs[:, idx]
-#
-# # 7. Optioneel: print gemiddelde score per label
-# print("Gemiddelde scores per label:")
-# for idx, label in id2label.items():
-#     print(f"{label}: {probs[:, idx].mean():.4f}")
-#
-# # 8. Sla de resultaten op
-# df.to_csv('data/test_data_classified.csv', index=False)
-# print("Klassificatie klaar. Resultaten opgeslagen in 'test_data_classified.csv'.")
-#
+        # Remove existing classifications with the same model
+        collection.update_one(
+            {"_id": doc_id},
+            {"$pull": {"enrichments": {"model_used": enrichment["model_used"]}}}
+        )
+
+        # Apply new classification data
+        collection.update_one(
+            {"_id": doc_id},
+            {"$push": {"enrichments": enrichment}}
+        )
+
+    print(f"Batch {i+1}/{total_batches} processed and written to MongoDB.")
+
+print("Classification finished. All results written to MongoDB.")
+
