@@ -12,7 +12,7 @@ finetuned_model_name = "bert-base-dutch-cased_finetuned" # Replace with fine tun
 client = MongoClient("mongodb://localhost:27017/")
 db = client[database_name]
 collection = db[collection_name]
-
+#set query
 cursor = collection.find({'$and': [ {'generic_file_type': 'berichtbestand'}, {'word_count': {'$gte': 100} }, {'word_count': {'$lte': 120}} ] })
 
 texts_all = []
@@ -23,7 +23,7 @@ for doc in cursor:
         ids_all.append(doc["_id"])
 
 if not texts_all:
-    raise ValueError("Geen records gevonden met het veld 'extracted_text'.")
+    raise ValueError("No records found with 'extracted_text'.")
 
 # Load model and tokenizer
 model_dir = "./" + finetuned_model_name

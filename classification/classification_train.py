@@ -217,7 +217,6 @@ def main():
 
     # Print training summary
     print("Training completed!")
-    # print(f"Training time: {train_result.training_time:.2f} seconds")
 
     # Evaluation on validation set
     print("Start evaluation on validation set...")
