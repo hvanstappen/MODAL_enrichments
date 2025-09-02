@@ -10,8 +10,8 @@ import os
 from sentence_transformers import SentenceTransformer
 
 # SET DB COLLECTION:
-database_name = "MODAL_testdata"
-collection_name = "LH_UitgeverijVrijdag"
+database_name = "MODAL_data"
+collection_name = "collection_name"
 
 # Disable GPU usage
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -147,16 +147,12 @@ for doc_id, doc_topic, doc_prob in zip(doc_ids, topics, probs):
     if doc_topic != -1:
         num_enrichments += 1
         topic_representation = topic_model.get_topic(doc_topic) or []
-        # doc_topic_index = doc_topic + 1
-        # topic_labels = topic_model.generate_topic_labels()
-        # topic_name = topic_labels[doc_topic_index] if doc_topic_index < len(topic_labels) else f"Topic {doc_topic}"
         topic_name = topic_labels_dict.get(doc_topic, f"Topic {doc_topic}")
         topic_keywords = [word for word, _ in topic_representation]
         subject = info.loc[info['Topic'] == doc_topic, 'subject'].values[0] if not info.loc[
             info['Topic'] == doc_topic, 'subject'].empty else None
         if subject is None:
             subject = f"no subject"
-        # topic_probability = extract_scalar_probability(doc_prob)
         topic_probability = float(doc_prob[doc_topic]) if doc_prob is not None and doc_topic != -1 else None  #FIX 1
 
     else:
