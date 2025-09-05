@@ -1,19 +1,30 @@
 from pymongo import MongoClient
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# SET DB COLLECTION:
+database_name = "MODAL_data"
+collection_name = "collection_name"
 
 # Connect to the MongoDB server
-client = MongoClient("mongodb://localhost:27017/")  # Update URI as needed
-db = client["MODAL_testdata"]  # Replace with  database name
-collection = db["LH_HH_71_Kristien_Hemmerechts"]  # Replace with  collection name
+client = MongoClient("mongodb://localhost:27017/")
+db = client[database_name] # Replace with  database name
+collection = db[collection_name] #Replace with  collection name
+
+# send token to get model from Hugging Face Hub
+token = os.environ["HF_TOKEN"]
 
 # Specify the model name
-model_name = "google/gemma-2-2b-it"  # Using 2B since 1B might have limited availability
+model_name = "google/gemma-3-1b-it"
+# model_name = "google/gemma-2-2b-it"
 
 # Load the tokenizer and model
-token = "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"
 tokenizer = AutoTokenizer.from_pretrained(model_name, token=token)
 model = AutoModelForCausalLM.from_pretrained(model_name, token=token)
+
+quit()
 
 instruction = "Beantwoord de volgende vraag in het Nederlands, met enkel een antwoord, gebaseerd op de context. Antwoord in json formaat met een betrouwbaarheidsscore tussen 0 en 1"
 # instruction = "Geef een bondig antwoord op de volgende vraag, gebaseerd op de context."
