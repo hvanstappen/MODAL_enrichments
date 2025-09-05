@@ -17,6 +17,7 @@ client = MongoClient("mongodb://localhost:27017/")
 db = client[database_name] # Replace with  database name
 collection = db[collection_name] #Replace with  collection name
 
+# send token to get model from Hugging Face Hub
 token = os.environ["HF_TOKEN"]
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
