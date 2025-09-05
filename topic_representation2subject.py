@@ -1,9 +1,9 @@
 import os
 from openai import OpenAI
-from dotenv import load_dotenv
-load_dotenv()
 from mistralai import Mistral
 from pydantic import BaseModel
+from dotenv import load_dotenv
+load_dotenv()
 
 class Subject(BaseModel):
     subject: str

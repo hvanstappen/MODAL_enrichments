@@ -3,15 +3,21 @@ import torch
 from pymongo import MongoClient
 import datetime
 import logging
+import os
 import re
+from dotenv import load_dotenv
+load_dotenv()
 
+# SET DB COLLECTION:
+database_name = "MODAL_data"
+collection_name = "collection_name"
 
 # Connect to the MongoDB server
-client = MongoClient("mongodb://localhost:27017/")  # Update URI as needed
-db = client["MODAL_testdata"]  # Replace with  database name
-collection = db["LH_UitgeverijVrijdag"]  # Replace with  collection name
+client = MongoClient("mongodb://localhost:27017/")
+db = client[database_name] # Replace with  database name
+collection = db[collection_name] #Replace with  collection name
 
-token = "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"
+token = os.environ["HF_TOKEN"]
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # device = "cpu" # uncomment this option in case of GPU memory issues
