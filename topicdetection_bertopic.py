@@ -194,6 +194,5 @@ for doc_id, doc_topic, doc_prob in zip(doc_ids, topics, probs):
         )
 
 
-
 print(f'Documents with topics found: {num_enrichments}, documents without topics found: {num_no_topic_found}')
 print("Topics with probabilities have been written back to the database.")
