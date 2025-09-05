@@ -11,7 +11,6 @@ client = MongoClient("mongodb://localhost:27017/")  # Update URI as needed
 db = client["MODAL_testdata"]  # Replace with  database name
 collection = db["LH_UitgeverijVrijdag"]  # Replace with  collection name
 
-token = "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"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # device = "cpu" # uncomment this option in case of GPU memory issues
