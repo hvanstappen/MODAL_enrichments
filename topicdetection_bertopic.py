@@ -104,10 +104,12 @@ if probs is None:
     print("Warning: No probabilities were calculated. Proceeding without them.")
     probs = [None] * len(topics)
 
+#get topics and write to CSV file:
 info = topic_model.get_topic_info()
 csv_path = "data/Bert_topics_" + collection_name + ".csv"
 info.to_csv(csv_path, index=False)
 
+# Get topics for each document and write to database
 print("creating subjects...")
 if 'subject' not in info.columns:
     info['subject'] = None
@@ -117,7 +119,7 @@ for index, row in info.iterrows():
     print(topic_representation)
     keywords = "'" + ", ".join(item for item in topic_representation) + "'"
     print(keywords)
-    subject = topic_representation2subject_openai(keywords)
+    subject = topic_representation2subject_openai(keywords) # create label
     print(subject)
     info.at[index, 'subject'] = subject
 

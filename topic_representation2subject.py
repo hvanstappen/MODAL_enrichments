@@ -53,4 +53,3 @@ def topic_representation2subject_mistral(topic_representation):
 
     response = chat_response.choices[0].message.content
     return response
-
